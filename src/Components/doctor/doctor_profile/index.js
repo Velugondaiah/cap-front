@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const DoctorProfile = () => {
+const DoctorProfile = ({ onNavigate }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,6 +50,9 @@ const DoctorProfile = () => {
       <p><strong>Hospital Name:</strong> {profile.hospital_name}</p>
       <p><strong>Location:</strong> {profile.location}</p>
       <p><strong>Verified:</strong> {profile.verified ? 'Yes' : 'No'}</p>
+      <button style={{marginTop: 24}} onClick={() => onNavigate && onNavigate('doctor_dashboard')}>
+        Back to Dashboard
+      </button>
     </div>
   );
 };

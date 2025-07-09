@@ -71,8 +71,15 @@ const Login = ({ onNavigate }) => {
         localStorage.setItem('token', result.data.token);
         localStorage.setItem('user', JSON.stringify(result.data.user));
         alert(`Welcome back! Logged in as ${formData.role}`);
-        // Optionally, navigate to the profile/dashboard page here
-        // onNavigate('profile'); // or similar
+
+        // Redirect to the correct dashboard
+        if (onNavigate) {
+          if (result.data.user.role === 'user') onNavigate('user_dashboard');
+          else if (result.data.user.role === 'doctor') onNavigate('doctor_dashboard');
+          else if (result.data.user.role === 'police') onNavigate('police_dashboard');
+          else onNavigate('login');
+        }
+
         setFormData({
           email: '',
           password: '',

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const UserProfile = () => {
+const UserProfile = ({ onNavigate }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,6 +71,9 @@ const UserProfile = () => {
           <p><strong>Verified:</strong> {profile.verified ? 'Yes' : 'No'}</p>
         </>
       )}
+      <button style={{marginTop: 24}} onClick={() => onNavigate && onNavigate('user_dashboard')}>
+        Back to Dashboard
+      </button>
     </div>
   );
 };

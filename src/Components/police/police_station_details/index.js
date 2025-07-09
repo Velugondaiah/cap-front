@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const PoliceProfile = () => {
+const PoliceProfile = ({ onNavigate }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,6 +50,9 @@ const PoliceProfile = () => {
       <p><strong>Jurisdiction Area:</strong> {profile.jurisdiction_area}</p>
       <p><strong>Rank:</strong> {profile.rank}</p>
       <p><strong>Verified:</strong> {profile.verified ? 'Yes' : 'No'}</p>
+      <button style={{marginTop: 24}} onClick={() => onNavigate && onNavigate('police_dashboard')}>
+        Back to Dashboard
+      </button>
     </div>
   );
 };
