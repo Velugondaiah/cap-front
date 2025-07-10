@@ -9,6 +9,7 @@ import PoliceDashboard from './Components/police/police_station_dashboard';
 import UserProfile from './Components/user_reporter/user_profile';
 import DoctorProfile from './Components/doctor/doctor_profile';
 import PoliceProfile from './Components/police/police_station_details';
+import UserReportMissing from './Components/user_reporter/user_report_missing';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -32,6 +33,7 @@ function App() {
             <Route path="/doctor_dashboard" element={<DoctorDashboardWithNav />} />
             <Route path="/police_dashboard" element={<PoliceDashboardWithNav />} />
             <Route path="/profile" element={<ProfileWithNav userRole={userRole} />} />
+            <Route path="/report_missing" element={<UserReportMissing />} />
           </Routes>
         </div>
       </div>
@@ -59,6 +61,7 @@ function UserDashboardWithNav() {
   const navigate = useNavigate();
   return <UserDashboard onNavigate={page => {
     if (page === 'profile') navigate('/profile');
+    else if (page === 'report_missing') navigate('/report_missing');
   }} />;
 }
 function DoctorDashboardWithNav() {

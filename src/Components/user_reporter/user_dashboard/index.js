@@ -15,7 +15,6 @@ const UserDashboard = ({ onNavigate }) => {
   const [user, setUser] = useState({ name: '', role: 'Citizen', verified: true });
   const [darkMode, setDarkMode] = useState(false);
   const [activeNav, setActiveNav] = useState('Dashboard');
-  const [openReport, setOpenReport] = useState(false);
   const [openSighting, setOpenSighting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
 
@@ -40,6 +39,16 @@ const UserDashboard = ({ onNavigate }) => {
     { desc: 'Reward for reporting sighting of John Doe', status: 'Earned' },
     { desc: 'Reward for uploading sighting of Jane Smith', status: 'Pending' },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    if (onNavigate) {
+      onNavigate('login');
+    } else {
+      window.location.href = '/login';
+    }
+  };
 
   return (
     <div className={`civic-dashboard-root topnav-layout${darkMode ? ' dark' : ''}`}> 
@@ -72,7 +81,7 @@ const UserDashboard = ({ onNavigate }) => {
           <IconButton color="inherit" onClick={() => setDarkMode(!darkMode)} size="small">
             {darkMode ? <Brightness7 style={{ fontSize: 20 }} /> : <Brightness4 style={{ fontSize: 20 }} />}
           </IconButton>
-          <IconButton color="inherit" onClick={() => alert('Logout')} size="small"><Logout style={{ fontSize: 20 }} /></IconButton>
+          <IconButton color="inherit" onClick={handleLogout} size="small"><Logout style={{ fontSize: 20 }} /></IconButton>
           <div className="civic-topnav-profile">
             <Avatar src={user.photo || ''} style={{ width: 32, height: 32 }} />
             <div className="civic-topnav-profile-info">
@@ -96,7 +105,7 @@ const UserDashboard = ({ onNavigate }) => {
             </div>
           </div>
           <div className="civic-header-actions">
-            <button className="civic-header-action-btn" onClick={() => setOpenReport(true)}><AddAlert style={{ fontSize: 22 }} /> Report Missing</button>
+            <button className="civic-header-action-btn" onClick={() => onNavigate && onNavigate('report_missing')}><AddAlert style={{ fontSize: 22 }} /> Report Missing</button>
             <button className="civic-header-action-btn" onClick={() => setOpenSighting(true)}><CloudUpload style={{ fontSize: 22 }} /> Upload Sighting</button>
           </div>
         </section>
@@ -158,27 +167,6 @@ const UserDashboard = ({ onNavigate }) => {
           </div>
         </section>
       </main>
-      {/* Report Missing Person Modal */}
-      <Dialog open={openReport} onClose={() => setOpenReport(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Report Missing Person</DialogTitle>
-        <DialogContent>
-          <TextField margin="dense" label="Name" fullWidth />
-          <TextField margin="dense" label="Age" type="number" fullWidth />
-          <TextField margin="dense" label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} fullWidth />
-          <TextField margin="dense" label="Gender" fullWidth />
-          <TextField margin="dense" label="Photo URL" fullWidth />
-          <TextField margin="dense" label="Physical Description" fullWidth multiline rows={2} />
-          <TextField margin="dense" label="Last Seen Location" fullWidth />
-          <TextField margin="dense" label="Date & Time Last Seen" type="datetime-local" InputLabelProps={{ shrink: true }} fullWidth />
-          <TextField margin="dense" label="Contact Information" fullWidth />
-          <TextField margin="dense" label="Relationship to Missing Person" fullWidth />
-          <TextField margin="dense" label="Additional Details" fullWidth multiline rows={2} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenReport(false)}>Cancel</Button>
-          <Button onClick={() => { setOpenReport(false); setOpenAlert(true); }} variant="contained" color="primary">Submit</Button>
-        </DialogActions>
-      </Dialog>
       {/* Upload Sighting Modal */}
       <Dialog open={openSighting} onClose={() => setOpenSighting(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Upload Sighting</DialogTitle>
