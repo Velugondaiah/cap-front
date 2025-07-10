@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Card, CardContent, Typography, Avatar, Box, Button, Chip, Grid, Tooltip, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
+import { Email, Phone, Badge, Home, Cake, Wc, VerifiedUser, Edit, Logout } from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import './index.css';
 
 const UserProfile = ({ onNavigate }) => {
   const [profile, setProfile] = useState(null);
@@ -39,42 +43,82 @@ const UserProfile = ({ onNavigate }) => {
   if (!profile) return null;
 
   return (
-    <div className="profile-card">
-      <h2>Profile</h2>
-      <p><strong>Name:</strong> {profile.name}</p>
-      <p><strong>Email:</strong> {profile.email}</p>
-      <p><strong>Phone:</strong> {profile.phone}</p>
-      <p><strong>Role:</strong> {profile.role}</p>
-      {profile.role === 'user' && (
-        <>
-          <p><strong>Aadhar Number:</strong> {profile.aadhar_number}</p>
-          <p><strong>Address:</strong> {profile.address}</p>
-          <p><strong>Date of Birth:</strong> {profile.date_of_birth}</p>
-          <p><strong>Gender:</strong> {profile.gender}</p>
-        </>
-      )}
-      {profile.role === 'police' && (
-        <>
-          <p><strong>Badge Number:</strong> {profile.badge_number}</p>
-          <p><strong>Station Name:</strong> {profile.station_name}</p>
-          <p><strong>Jurisdiction Area:</strong> {profile.jurisdiction_area}</p>
-          <p><strong>Rank:</strong> {profile.rank}</p>
-          <p><strong>Verified:</strong> {profile.verified ? 'Yes' : 'No'}</p>
-        </>
-      )}
-      {profile.role === 'doctor' && (
-        <>
-          <p><strong>Specialization:</strong> {profile.specialization}</p>
-          <p><strong>License Number:</strong> {profile.license_number}</p>
-          <p><strong>Hospital Name:</strong> {profile.hospital_name}</p>
-          <p><strong>Location:</strong> {profile.location}</p>
-          <p><strong>Verified:</strong> {profile.verified ? 'Yes' : 'No'}</p>
-        </>
-      )}
-      <button style={{marginTop: 24}} onClick={() => onNavigate && onNavigate('user_dashboard')}>
-        Back to Dashboard
-      </button>
-    </div>
+    <Box className="profile-bg" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 1, md: 4 }, position: 'relative' }}>
+      {/* Animated floating pastel shapes */}
+      <div className="floating-shape shape1" />
+      <div className="floating-shape shape2" />
+      <div className="floating-shape shape3" />
+      <div className="floating-shape shape4" />
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="profile-2col-wrapper"
+      >
+        <Grid container spacing={4} alignItems="stretch" justifyContent="center">
+          {/* Left column: Avatar, name, role, actions */}
+          <Grid item xs={12} md={4}>
+            <Card className="profile-side-card" sx={{ p: 3, borderRadius: 4, boxShadow: 6, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.92)' }}>
+              <Avatar sx={{ width: 100, height: 100, mb: 2, boxShadow: 3, border: '4px solid #2d6cdf' }} src={profile.photo || ''} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{profile.name}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, mb: 1 }}>
+                <Chip label={profile.role === 'user' ? 'Citizen' : profile.role} color="primary" size="medium" sx={{ fontWeight: 600 }} />
+                {profile.verified && (
+                  <Tooltip title="Verified">
+                    <motion.span
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                      style={{ display: 'inline-flex' }}
+                    >
+                      <VerifiedUser color="success" fontSize="medium" />
+                    </motion.span>
+                  </Tooltip>
+                )}
+              </Box>
+              <Typography variant="caption" color={profile.verified ? 'success.main' : 'warning.main'}>
+                {profile.verified ? 'Verified Citizen' : 'Verification Pending'}
+              </Typography>
+              <Divider sx={{ my: 2, width: '100%' }} />
+              <Button fullWidth variant="outlined" startIcon={<Edit />} sx={{ mb: 1 }} onClick={() => alert('Edit profile coming soon!')}>Edit</Button>
+              <Button fullWidth variant="contained" color="error" startIcon={<Logout />} sx={{ mb: 1 }} onClick={() => { localStorage.clear(); window.location.reload(); }}>Logout</Button>
+              <Button fullWidth variant="text" onClick={() => onNavigate && onNavigate('user_dashboard')}>Back to Dashboard</Button>
+            </Card>
+          </Grid>
+          {/* Right column: Details */}
+          <Grid item xs={12} md={8}>
+            <Card className="profile-glass-card" sx={{ p: 3, borderRadius: 4, boxShadow: 6, bgcolor: 'rgba(255,255,255,0.85)' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2d6cdf' }}>Profile Details</Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon><Email color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.email} secondary="Email" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Phone color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.phone} secondary="Phone" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Badge color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.aadhar_number} secondary="Aadhar Number" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Home color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.address} secondary="Address" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Cake color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.date_of_birth} secondary="Date of Birth" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Wc color="primary" /></ListItemIcon>
+                  <ListItemText primary={profile.gender} secondary="Gender" />
+                </ListItem>
+              </List>
+            </Card>
+          </Grid>
+        </Grid>
+      </motion.div>
+    </Box>
   );
 };
 
