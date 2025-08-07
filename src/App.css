@@ -18,6 +18,18 @@ body {
   transition: all 0.3s ease;
 }
 
+/* App Layout with Navbar */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  padding-top: 0; /* Remove top padding since navbar is sticky */
+}
+
 /* Page transition animation */
 .page-transition {
   animation: fadeIn 0.3s ease-in-out;

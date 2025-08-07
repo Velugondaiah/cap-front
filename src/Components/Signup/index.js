@@ -148,7 +148,15 @@ const Signup = ({ onNavigate }) => {
       const result = await response.json();
 
       if (result.success) {
-        alert('Signup successful! Please check your email for verification.');
+        alert('Signup successful! Please login with your credentials.');
+        // Redirect to login page
+        if (onNavigate) {
+          onNavigate('login');
+        } else {
+          window.location.href = '/login';
+        }
+        
+        // Reset form
         setFormData({
           name: '',
           email: '',

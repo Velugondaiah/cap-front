@@ -35,6 +35,15 @@ const UserReportMissing = () => {
     setSubmitting(true);
     setSuccess(null);
     setError(null);
+    // Validate all fields are filled
+    for (const [key, value] of Object.entries(form)) {
+      if ((key === 'image' && !value) || (key !== 'image' && !value.trim())) {
+        setError('All fields are mandatory. Please fill out every field.');
+        window.alert('All fields are mandatory. Please fill out every field.');
+        setSubmitting(false);
+        return;
+      }
+    }
     try {
       const data = new FormData();
       Object.entries(form).forEach(([k, v]) => {
@@ -72,16 +81,16 @@ const UserReportMissing = () => {
         <h2>Report Missing Person</h2>
         <div className="missing-report-fields">
           <div className="missing-report-group">
-            <label>Full Name<span>*</span></label>
+            <label>Full Name<span style={{color: '#ef4444'}}>*</span></label>
             <input name="full_name" value={form.full_name} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Age When Missing</label>
-            <input name="age_when_missing" type="number" min="0" value={form.age_when_missing} onChange={handleChange} />
+            <label>Age When Missing<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="age_when_missing" type="number" min="0" value={form.age_when_missing} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Gender</label>
-            <select name="gender" value={form.gender} onChange={handleChange}>
+            <label>Gender<span style={{color: '#ef4444'}}>*</span></label>
+            <select name="gender" value={form.gender} onChange={handleChange} required>
               <option value="">Select</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -89,32 +98,32 @@ const UserReportMissing = () => {
             </select>
           </div>
           <div className="missing-report-group">
-            <label>Last Seen Location</label>
-            <input name="last_seen_location" value={form.last_seen_location} onChange={handleChange} />
+            <label>Last Seen Location<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="last_seen_location" value={form.last_seen_location} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Last Seen Date</label>
-            <input name="last_seen_date" type="date" value={form.last_seen_date} onChange={handleChange} />
+            <label>Last Seen Date<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="last_seen_date" type="date" value={form.last_seen_date} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Photo (Image)</label>
-            <input name="image" type="file" accept="image/*" onChange={handleChange} />
+            <label>Photo (Image)<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="image" type="file" accept="image/*" onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Guardian Name<span>*</span></label>
+            <label>Guardian Name<span style={{color: '#ef4444'}}>*</span></label>
             <input name="guardian_name" value={form.guardian_name} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Relationship</label>
-            <input name="relationship" value={form.relationship} onChange={handleChange} />
+            <label>Relationship<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="relationship" value={form.relationship} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Phone Number</label>
-            <input name="phone_number" value={form.phone_number} onChange={handleChange} />
+            <label>Phone Number<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="phone_number" value={form.phone_number} onChange={handleChange} required />
           </div>
           <div className="missing-report-group">
-            <label>Email</label>
-            <input name="email" type="email" value={form.email} onChange={handleChange} />
+            <label>Email<span style={{color: '#ef4444'}}>*</span></label>
+            <input name="email" type="email" value={form.email} onChange={handleChange} required />
           </div>
         </div>
         <button className="missing-report-submit" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Report'}</button>

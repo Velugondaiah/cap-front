@@ -3,15 +3,7 @@ import { Avatar, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogA
 import { Dashboard, Person, Message, Settings, Notifications, Logout, Brightness4, Brightness7, VerifiedUser, AddAlert, CloudUpload, CheckCircle, EmojiEvents, Map } from '@mui/icons-material';
 import './index.css';
 
-const navItems = [
-  { label: 'Dashboard', icon: <Dashboard /> },
-  { label: 'Profile', icon: <Person /> },
-  { label: 'Reports', icon: <CheckCircle /> },
-  { label: 'Messages', icon: <Message /> },
-  { label: 'Settings', icon: <Settings /> },
-];
-
-const UserDashboard = ({ onNavigate }) => {
+const UserDashboard = () => {
   const [user, setUser] = useState({ name: '', role: 'Citizen', verified: true });
   const [darkMode, setDarkMode] = useState(false);
   const [activeNav, setActiveNav] = useState('Dashboard');
@@ -40,57 +32,8 @@ const UserDashboard = ({ onNavigate }) => {
     { desc: 'Reward for uploading sighting of Jane Smith', status: 'Pending' },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    if (onNavigate) {
-      onNavigate('login');
-    } else {
-      window.location.href = '/login';
-    }
-  };
-
   return (
     <div className={`civic-dashboard-root topnav-layout${darkMode ? ' dark' : ''}`}> 
-      {/* Top Navigation Bar */}
-      <header className="civic-topnav">
-        <div className="civic-topnav-left">
-          <span className="civic-topnav-logo">
-            <Dashboard className="civic-topnav-logo-icon" />
-            CivicIQ
-          </span>
-          <nav className="civic-topnav-nav">
-            {navItems.map((item) => (
-              <div
-                key={item.label}
-                className={`civic-topnav-nav-item${activeNav === item.label ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveNav(item.label);
-                  onNavigate && onNavigate(item.label.toLowerCase());
-                }}
-                title={item.label}
-                style={{ fontSize: '1rem', padding: '8px 16px' }}
-              >
-                {React.cloneElement(item.icon, { style: { fontSize: 20 } })}
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </nav>
-        </div>
-        <div className="civic-topnav-right">
-          <IconButton color="inherit" onClick={() => setDarkMode(!darkMode)} size="small">
-            {darkMode ? <Brightness7 style={{ fontSize: 20 }} /> : <Brightness4 style={{ fontSize: 20 }} />}
-          </IconButton>
-          <IconButton color="inherit" onClick={handleLogout} size="small"><Logout style={{ fontSize: 20 }} /></IconButton>
-          <div className="civic-topnav-profile">
-            <Avatar src={user.photo || ''} style={{ width: 32, height: 32 }} />
-            <div className="civic-topnav-profile-info">
-              <div className="civic-topnav-profile-name">{user.name || 'Citizen'} {user.verified && <VerifiedUser className="civic-topnav-badge" title="Verified user" />}</div>
-              <div className="civic-topnav-profile-role">{user.role}</div>
-            </div>
-          </div>
-        </div>
-      </header>
       {/* Main Content */}
       <main className="civic-dashboard-main topnav-main">
         {/* Hero Section */}
@@ -105,7 +48,7 @@ const UserDashboard = ({ onNavigate }) => {
             </div>
           </div>
           <div className="civic-header-actions">
-            <button className="civic-header-action-btn" onClick={() => onNavigate && onNavigate('report_missing')}><AddAlert style={{ fontSize: 22 }} /> Report Missing</button>
+            <button className="civic-header-action-btn" onClick={() => window.location.href = '/report_missing'}><AddAlert style={{ fontSize: 22 }} /> Report Missing</button>
             <button className="civic-header-action-btn" onClick={() => setOpenSighting(true)}><CloudUpload style={{ fontSize: 22 }} /> Upload Sighting</button>
           </div>
         </section>

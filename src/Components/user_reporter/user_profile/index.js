@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Avatar, Box, Button, Chip, Grid, Tooltip, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Email, Phone, Badge, Home, Cake, Wc, VerifiedUser, Edit, Logout } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import './index.css';
 
-const UserProfile = ({ onNavigate }) => {
+const UserProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -15,22 +17,59 @@ const UserProfile = ({ onNavigate }) => {
       setError(null);
       try {
         const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
         if (!token) {
-          setError('Not logged in.');
-          setLoading(false);
-          return;
+          // If no token, try to use stored user data as fallback
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            setProfile(userData);
+            setLoading(false);
+            return;
+          } else {
+            setError('Not logged in.');
+            setLoading(false);
+            return;
+          }
         }
+
         const response = await fetch('http://localhost:5000/api/auth/profile', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
-        const result = await response.json();
-        if (result.success) {
-          setProfile(result.data.user);
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setProfile(result.data.user);
+            // Update stored user data with fresh data
+            localStorage.setItem('user', JSON.stringify(result.data.user));
+          } else {
+            // If API fails, use stored user data as fallback
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              setProfile(userData);
+            } else {
+              setError(result.message || 'Failed to fetch profile.');
+            }
+          }
         } else {
-          setError(result.message || 'Failed to fetch profile.');
+          // If API fails, use stored user data as fallback
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            setProfile(userData);
+          } else {
+            setError('Failed to fetch profile.');
+          }
         }
       } catch (err) {
-        setError('Error fetching profile.');
+        // If network error, use stored user data as fallback
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setProfile(userData);
+        } else {
+          setError('Error fetching profile.');
+        }
       } finally {
         setLoading(false);
       }
@@ -38,8 +77,24 @@ const UserProfile = ({ onNavigate }) => {
     fetchProfile();
   }, []);
 
-  if (loading) return <div>Loading profile...</div>;
-  if (error) return <div style={{color:'red'}}>{error}</div>;
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  if (loading) return (
+    <Box className="profile-bg" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h6" color="primary">Loading profile...</Typography>
+    </Box>
+  );
+  
+  if (error && !profile) return (
+    <Box className="profile-bg" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h6" color="error">{error}</Typography>
+    </Box>
+  );
+  
   if (!profile) return null;
 
   return (
@@ -80,8 +135,8 @@ const UserProfile = ({ onNavigate }) => {
               </Typography>
               <Divider sx={{ my: 2, width: '100%' }} />
               <Button fullWidth variant="outlined" startIcon={<Edit />} sx={{ mb: 1 }} onClick={() => alert('Edit profile coming soon!')}>Edit</Button>
-              <Button fullWidth variant="contained" color="error" startIcon={<Logout />} sx={{ mb: 1 }} onClick={() => { localStorage.clear(); window.location.reload(); }}>Logout</Button>
-              <Button fullWidth variant="text" onClick={() => onNavigate && onNavigate('user_dashboard')}>Back to Dashboard</Button>
+              <Button fullWidth variant="contained" color="error" startIcon={<Logout />} sx={{ mb: 1 }} onClick={handleLogout}>Logout</Button>
+              <Button fullWidth variant="text" onClick={() => navigate('/user_dashboard')}>Back to Dashboard</Button>
             </Card>
           </Grid>
           {/* Right column: Details */}
@@ -97,22 +152,55 @@ const UserProfile = ({ onNavigate }) => {
                   <ListItemIcon><Phone color="primary" /></ListItemIcon>
                   <ListItemText primary={profile.phone} secondary="Phone" />
                 </ListItem>
-                <ListItem>
-                  <ListItemIcon><Badge color="primary" /></ListItemIcon>
-                  <ListItemText primary={profile.aadhar_number} secondary="Aadhar Number" />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><Home color="primary" /></ListItemIcon>
-                  <ListItemText primary={profile.address} secondary="Address" />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><Cake color="primary" /></ListItemIcon>
-                  <ListItemText primary={profile.date_of_birth} secondary="Date of Birth" />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><Wc color="primary" /></ListItemIcon>
-                  <ListItemText primary={profile.gender} secondary="Gender" />
-                </ListItem>
+                {profile.aadhar_number && (
+                  <ListItem>
+                    <ListItemIcon><Badge color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.aadhar_number} secondary="Aadhar Number" />
+                  </ListItem>
+                )}
+                {profile.address && (
+                  <ListItem>
+                    <ListItemIcon><Home color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.address} secondary="Address" />
+                  </ListItem>
+                )}
+                {profile.date_of_birth && (
+                  <ListItem>
+                    <ListItemIcon><Cake color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.date_of_birth} secondary="Date of Birth" />
+                  </ListItem>
+                )}
+                {profile.gender && (
+                  <ListItem>
+                    <ListItemIcon><Wc color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.gender} secondary="Gender" />
+                  </ListItem>
+                )}
+                {/* Show role-specific fields */}
+                {profile.badge_number && (
+                  <ListItem>
+                    <ListItemIcon><Badge color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.badge_number} secondary="Badge Number" />
+                  </ListItem>
+                )}
+                {profile.station_name && (
+                  <ListItem>
+                    <ListItemIcon><Home color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.station_name} secondary="Station Name" />
+                  </ListItem>
+                )}
+                {profile.specialization && (
+                  <ListItem>
+                    <ListItemIcon><Badge color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.specialization} secondary="Specialization" />
+                  </ListItem>
+                )}
+                {profile.hospital_name && (
+                  <ListItem>
+                    <ListItemIcon><Home color="primary" /></ListItemIcon>
+                    <ListItemText primary={profile.hospital_name} secondary="Hospital Name" />
+                  </ListItem>
+                )}
               </List>
             </Card>
           </Grid>
