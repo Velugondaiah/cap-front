@@ -13,6 +13,7 @@ import UserReportMissing from './Components/user_reporter/user_report_missing';
 import UserHistory from './Components/user_reporter/user_history';
 import Navbar from './Components/shared/Navbar';
 
+
 function App() {
   const [userRole, setUserRole] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
