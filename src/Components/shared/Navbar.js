@@ -90,7 +90,7 @@ const Navbar = ({ userRole = 'user', onLogout }) => {
       <div className="civic-topnav-left">
         <span className="civic-topnav-logo">
           <Dashboard className="civic-topnav-logo-icon" />
-          CivicIQ
+          
         </span>
         <nav className="civic-topnav-nav">
           {navItems.map((item) => (
