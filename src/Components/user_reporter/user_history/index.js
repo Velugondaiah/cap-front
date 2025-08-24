@@ -3,321 +3,466 @@ import './index.css';
 import { useNavigate } from 'react-router-dom';
 
 const UserHistory = () => {
-  const [reports, setReports] = useState([]);
-  const [spottedReports, setSpottedReports] = useState([]);
+  const [reports, setReports] = useState({
+    missingRelatives: { active: [], found: [] },
+    unknownPersons: { reports: [] }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('missing'); // 'missing' or 'spotted'
+  const [activeTab, setActiveTab] = useState('missing');
+  const [activeStatus, setActiveStatus] = useState('active');
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [triggeringFaceDetection, setTriggeringFaceDetection] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchReports = async () => {
-      setLoading(true);
-      setError(null);
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
         const token = localStorage.getItem('token');
-        
-        if (!user) {
-          setError('User not logged in.');
-          setLoading(false);
-          return;
-        }
-
-        // Use user.id if available, otherwise use user._id or email as fallback
-        const userId = user.id || user._id || user.email;
-        
-        if (!userId) {
-          setError('User ID not found.');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch missing person reports (user's own reports)
-        try {
-          const missingRes = await fetch(`http://localhost:5000/api/user_missing_reports?user_id=${userId}`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-          });
-          
-          if (missingRes.ok) {
-            const missingResult = await missingRes.json();
-            if (missingResult.success) {
-              setReports(missingResult.data || []);
-            } else {
-              console.log('Missing reports API response:', missingResult);
-              setReports([]); // Set empty array instead of error
-            }
-          } else {
-            console.log('Missing reports API failed:', missingRes.status);
-            setReports([]); // Set empty array instead of error
+        const response = await fetch('http://localhost:5000/api/all-reports', {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
           }
-        } catch (missingErr) {
-          console.log('Missing reports fetch error:', missingErr);
-          setReports([]); // Set empty array instead of error
+        });
+        const data = await response.json();
+        if (data.success) {
+          setReports(data.data);
+        } else {
+          throw new Error(data.error);
         }
-        
-        // Fetch spotted unknown person reports (photos uploaded by user)
-        try {
-          const spottedRes = await fetch(`http://localhost:5000/api/user_spotted_reports?user_id=${userId}`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-          });
-          
-          if (spottedRes.ok) {
-            const spottedResult = await spottedRes.json();
-            if (spottedResult.success) {
-              setSpottedReports(spottedResult.data || []);
-            } else {
-              console.log('Spotted reports API response:', spottedResult);
-              setSpottedReports([]); // Set empty array instead of error
-            }
-          } else {
-            console.log('Spotted reports API failed:', spottedRes.status);
-            setSpottedReports([]); // Set empty array instead of error
-          }
-        } catch (spottedErr) {
-          console.log('Spotted reports fetch error:', spottedErr);
-          setSpottedReports([]); // Set empty array instead of error
-        }
-        
+        setLoading(false);
       } catch (err) {
-        console.error('Reports fetch error:', err);
-        setError('Network or server error.');
-      } finally {
+        setError('Failed to fetch reports');
         setLoading(false);
       }
     };
+
     fetchReports();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'found':
-        return 'Found';
-      case 'active':
-        return 'Active';
-      default:
-        return 'Active';
+  // Auto-refresh reports every 30 seconds to catch automatic updates
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/all-reports', {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setReports(data.data);
+        }
+      } catch (err) {
+        console.log('Auto-refresh failed:', err);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getReportCount = (type, status) => {
+    if (type === 'missing') {
+      return reports.missingRelatives[status]?.length || 0;
+    } else {
+      return reports.unknownPersons.reports?.length || 0;
     }
   };
 
-  const getCurrentReports = () => {
-    return activeTab === 'missing' ? reports : spottedReports;
-  };
-
-  const getCurrentStats = () => {
-    const currentReports = getCurrentReports();
-    const activeCount = currentReports.filter(r => getStatusColor(r.status) === 'Active').length;
-    const foundCount = currentReports.filter(r => getStatusColor(r.status) === 'Found').length;
+  const handleMarkAsFound = async (reportId) => {
+    if (updatingStatus === reportId) return;
     
-    return {
-      total: currentReports.length,
-      active: activeCount,
-      found: foundCount
-    };
+    setUpdatingStatus(reportId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/mark-person-found/${reportId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        }
+        // No body needed since we're only updating status
+      });
+
+      if (response.ok) {
+        // Refresh the reports after successful update
+        const token = localStorage.getItem('token');
+        const refreshResponse = await fetch('http://localhost:5000/api/all-reports', {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }
+        });
+        const refreshData = await refreshResponse.json();
+        if (refreshData.success) {
+          setReports(refreshData.data);
+        }
+      } else {
+        console.error('Failed to mark person as found');
+      }
+    } catch (err) {
+      console.error('Error marking person as found:', err);
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
-  const renderReportCard = (report, isSpotted = false) => (
-    <div className="user-history-card" key={report.id || report._id || Math.random()}>
-      {/* Card Header */}
-      <div className="user-history-card-header">
-        <div className="user-history-card-img">
-          {report.image_url ? (
-            <img src={report.image_url} alt={report.full_name || 'Unknown Person'} />
-          ) : (
-            <div className="user-history-card-img-placeholder">👤</div>
-          )}
-        </div>
-        <div className="user-history-card-name">
-          {isSpotted ? (report.full_name || 'Unknown Person') : report.full_name}
-        </div>
-        <div className="user-history-card-status">
-          Status: {getStatusColor(report.status)}
-        </div>
-      </div>
+  const handleTriggerFaceDetection = async (reportId) => {
+    if (triggeringFaceDetection === reportId) return;
+    
+    setTriggeringFaceDetection(reportId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/trigger-face-detection/${reportId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        }
+      });
 
-      {/* Card Body */}
-      <div className="user-history-card-body">
-        <div className="user-history-card-info">
-          {isSpotted ? (
-            // Spotted person report fields
-            <>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Location</div>
-                <div className="user-history-card-value">{report.location || 'Unknown'}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Date Spotted</div>
-                <div className="user-history-card-value">{report.spotted_date || 'Unknown'}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Description</div>
-                <div className="user-history-card-value">{report.description || 'No description'}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Reported</div>
-                <div className="user-history-card-value">
-                  {report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}
-                </div>
-              </div>
-            </>
-          ) : (
-            // Missing person report fields
-            <>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Age</div>
-                <div className="user-history-card-value">{report.age_when_missing}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Gender</div>
-                <div className="user-history-card-value">{report.gender}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Last Seen</div>
-                <div className="user-history-card-value">{report.last_seen_location}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Date</div>
-                <div className="user-history-card-value">{report.last_seen_date}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Guardian</div>
-                <div className="user-history-card-value">{report.guardian_name}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Relationship</div>
-                <div className="user-history-card-value">{report.relationship}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Phone</div>
-                <div className="user-history-card-value">{report.phone_number}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Email</div>
-                <div className="user-history-card-value">{report.email}</div>
-              </div>
-              <div className="user-history-card-row">
-                <div className="user-history-card-label">Reported</div>
-                <div className="user-history-card-value">
-                  {report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Refresh the reports after successful face detection
+        const token = localStorage.getItem('token');
+        const refreshResponse = await fetch('http://localhost:5000/api/all-reports', {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }
+        });
+        const refreshData = await refreshResponse.json();
+        if (refreshData.success) {
+          setReports(refreshData.data);
+        }
+        alert('Face detection completed! Person marked as found.');
+      } else {
+        alert(result.message || 'Face detection failed');
+      }
+    } catch (err) {
+      console.error('Error triggering face detection:', err);
+      alert('Failed to trigger face detection');
+    } finally {
+      setTriggeringFaceDetection(null);
+    }
+  };
 
-        {/* Card Actions */}
-        <div className="user-history-card-actions">
-          <button className="user-history-card-action-btn primary">
-            View Details
-          </button>
-          <button className="user-history-card-action-btn secondary">
-            {isSpotted ? 'Update Spotting' : 'Update Report'}
+  const renderHeader = () => (
+    <header className="app-header">
+      <div className="header-container">
+        <div className="header-left">
+          <h1 className="page-title">Report Management</h1>
+          <p className="page-subtitle">Track and manage your missing person reports</p>
+        </div>
+        <div className="header-right">
+          <button 
+            className="primary-button"
+            onClick={() => navigate(activeTab === 'missing' ? '/report_missing' : '/report_unknown')}
+          >
+            <span className="button-icon">+</span>
+            New Report
           </button>
         </div>
       </div>
-    </div>
+    </header>
   );
 
-  const stats = getCurrentStats();
-
-  return (
-    <div className="user-history-root">
-      {/* Header Section */}
-      <div className="user-history-header">
-        <span className="user-history-header-emoji" role="img" aria-label="support">📋</span>
-        <div className="user-history-title">Your Reports</div>
-        <div className="user-history-support">
-          Track all your missing person reports and spotted unknown persons in one place.
+  const renderStats = () => (
+    <section className="stats-section">
+      <div className="stats-grid">
+        <div className="stat-card primary">
+          <div className="stat-header">
+            <div className="stat-icon primary">📊</div>
+            <div className="stat-trend positive">+12%</div>
+          </div>
+          <div className="stat-number">{getReportCount('missing', 'active')}</div>
+          <div className="stat-label">Active Cases</div>
+          <div className="stat-description">Currently being investigated</div>
+        </div>
+        
+        <div className="stat-card success">
+          <div className="stat-header">
+            <div className="stat-icon success">✅</div>
+            <div className="stat-trend positive">+8%</div>
+          </div>
+          <div className="stat-number">{getReportCount('missing', 'found')}</div>
+          <div className="stat-label">Resolved Cases</div>
+          <div className="stat-description">Successfully closed</div>
+        </div>
+        
+        <div className="stat-card info">
+          <div className="stat-header">
+            <div className="stat-icon info">👁️</div>
+            <div className="stat-trend neutral">0%</div>
+          </div>
+          <div className="stat-number">{getReportCount('spotted')}</div>
+          <div className="stat-label">Unknown Persons</div>
+          <div className="stat-description">Spotted individuals</div>
+        </div>
+        
+        <div className="stat-card warning">
+          <div className="stat-header">
+            <div className="stat-icon warning">⏱️</div>
+            <div className="stat-trend negative">-3%</div>
+          </div>
+          <div className="stat-number">24</div>
+          <div className="stat-label">Avg. Response Time</div>
+          <div className="stat-description">Hours to first response</div>
         </div>
       </div>
+    </section>
+  );
 
-      {/* Tabs Section */}
-      <div className="user-history-tabs">
-        <button 
-          className={`user-history-tab ${activeTab === 'missing' ? 'active' : ''}`}
-          onClick={() => setActiveTab('missing')}
-        >
-          <span className="user-history-tab-icon" role="img" aria-label="missing">🔍</span>
-          Missing Persons
-        </button>
-        <button 
-          className={`user-history-tab ${activeTab === 'spotted' ? 'active' : ''}`}
-          onClick={() => setActiveTab('spotted')}
-        >
-          <span className="user-history-tab-icon" role="img" aria-label="spotted">📸</span>
-          Spotted Persons
-        </button>
-      </div>
-
-      {/* Stats Section */}
-      <div className="user-history-stats">
-        <div className="user-history-stat-card">
-          <div className="user-history-stat-number">{stats.total}</div>
-          <div className="user-history-stat-label">
-            {activeTab === 'missing' ? 'Total Reports' : 'Total Spottings'}
+  const renderTabs = () => (
+    <section className="tabs-section">
+      <div className="tabs-container">
+        <div className="tab-group">
+          <button 
+            className={`tab-button ${activeTab === 'missing' ? 'active' : ''}`}
+            onClick={() => setActiveTab('missing')}
+          >
+            <span className="tab-icon">🔍</span>
+            Missing Relatives
+            <span className="tab-badge">{getReportCount('missing', 'active') + getReportCount('missing', 'found')}</span>
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'spotted' ? 'active' : ''}`}
+            onClick={() => setActiveTab('spotted')}
+          >
+            <span className="tab-icon">📸</span>
+            Unknown Persons
+            <span className="tab-badge">{getReportCount('spotted')}</span>
+          </button>
+        </div>
+        
+        {activeTab === 'missing' && (
+          <div className="status-filters">
+            <button 
+              className={`status-filter ${activeStatus === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveStatus('active')}
+            >
+              <span className="status-dot active"></span>
+              Active Cases
+              <span className="filter-count">{getReportCount('missing', 'active')}</span>
+            </button>
+            <button 
+              className={`status-filter ${activeStatus === 'found' ? 'active' : ''}`}
+              onClick={() => setActiveStatus('found')}
+            >
+              <span className="status-dot found"></span>
+              Found Cases
+              <span className="filter-count">{getReportCount('missing', 'found')}</span>
+            </button>
           </div>
-        </div>
-        <div className="user-history-stat-card">
-          <div className="user-history-stat-number">{stats.active}</div>
-          <div className="user-history-stat-label">
-            {activeTab === 'missing' ? 'Active Cases' : 'Active Spottings'}
-          </div>
-        </div>
-        <div className="user-history-stat-card">
-          <div className="user-history-stat-number">{stats.found}</div>
-          <div className="user-history-stat-label">
-            {activeTab === 'missing' ? 'Resolved Cases' : 'Identified Persons'}
-          </div>
-        </div>
-      </div>
-
-      {/* Loading State */}
-      {loading && (
-        <div className="user-history-loading">
-          <span role="img" aria-label="loading">⏳</span> Loading your reports...
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="user-history-error">
-          <span role="img" aria-label="error">⚠️</span> {error}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && getCurrentReports().length === 0 && (
-        <div className="user-history-empty">
-          <span className="user-history-empty-emoji" role="img" aria-label="no reports">
-            {activeTab === 'missing' ? '📝' : '📸'}
-          </span>
-          <div className="user-history-empty-title">
-            {activeTab === 'missing' ? 'No Missing Person Reports Yet' : 'No Spotted Persons Yet'}
-          </div>
-          <div className="user-history-empty-description">
-            {activeTab === 'missing' 
-              ? "You haven't reported anyone missing yet. We hope you never have to, but if you do, we're here to help."
-              : "You haven't spotted any unknown persons yet. Help others by reporting if you see someone who might be missing."
-            }
-          </div>
-        </div>
-      )}
-
-      {/* Reports Grid */}
-      <div className="user-history-list">
-        {getCurrentReports().map((report) => 
-          renderReportCard(report, activeTab === 'spotted')
         )}
       </div>
+    </section>
+  );
 
-      {/* Floating Action Button */}
-      <button 
-        className="user-history-fab" 
-        title={activeTab === 'missing' ? "Report someone missing" : "Report spotted person"}
-        onClick={() => navigate(activeTab === 'missing' ? '/report_missing' : '/report_spotted')}
-      >
-        <span role="img" aria-label="add">➕</span>
-      </button>
+  const renderReportCards = () => {
+    let displayReports = [];
+    
+    if (activeTab === 'missing') {
+      displayReports = reports.missingRelatives[activeStatus] || [];
+    } else {
+      displayReports = reports.unknownPersons.reports || [];
+    }
+
+    if (displayReports.length === 0) {
+      return (
+        <div className="empty-state">
+          <div className="empty-icon">📝</div>
+          <h3 className="empty-title">No Reports Found</h3>
+          <p className="empty-description">
+            {activeTab === 'missing' 
+              ? `No ${activeStatus} missing person reports found.`
+              : 'No unknown person reports found.'}
+          </p>
+          <button 
+            className="empty-action"
+            onClick={() => navigate(activeTab === 'missing' ? '/report_missing' : '/report_unknown')}
+          >
+            Create Your First Report
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="reports-grid">
+        {displayReports.map(report => (
+          <div key={report.id} className="report-card">
+            <div className="card-header">
+              <div className="report-info">
+                <div className="report-image">
+                  {report.image_url ? (
+                    <img 
+                      src={report.image_url} 
+                      alt={report.full_name || 'Unknown Person'} 
+                    />
+                  ) : (
+                    <div className="image-placeholder">
+                      <span>👤</span>
+                    </div>
+                  )}
+                </div>
+                <div className="report-details">
+                  <h3 className="report-name">
+                    {activeTab === 'missing' ? report.full_name : (report.name || 'Unknown Person')}
+                  </h3>
+                  {activeTab === 'missing' && (
+                    <div className="report-status">
+                      <span className={`status-badge ${report.status}`}>
+                        {report.status === 'active' ? 'Active' : 'Found'}
+                      </span>
+                      <span className="report-id">ID: #{report.id}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="card-actions">
+                <button className="action-button secondary" title="View Details">
+                  <span className="action-icon">👁️</span>
+                </button>
+                <button className="action-button secondary" title="Edit Report">
+                  <span className="action-icon">✏️</span>
+                </button>
+                {activeTab === 'missing' && report.status === 'active' && (
+                  <>
+                    <button 
+                      className="action-button success" 
+                      title="Mark as Found"
+                      onClick={() => handleMarkAsFound(report.id)}
+                      disabled={updatingStatus === report.id}
+                    >
+                      <span className="action-icon">
+                        {updatingStatus === report.id ? '⏳' : '✅'}
+                      </span>
+                    </button>
+                    {report.image_url && (
+                      <button 
+                        className="action-button info" 
+                        title="Trigger Face Detection"
+                        onClick={() => handleTriggerFaceDetection(report.id)}
+                        disabled={triggeringFaceDetection === report.id}
+                      >
+                        <span className="action-icon">
+                          {triggeringFaceDetection === report.id ? '⏳' : '🤖'}
+                        </span>
+                      </button>
+                    )}
+                  </>
+                )}
+                <button className="action-button primary" title="Take Action">
+                  <span className="action-icon">⚡</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="card-body">
+              <div className="info-grid">
+                {activeTab === 'missing' ? (
+                  <>
+                    <div className="info-item">
+                      <label>Age</label>
+                      <span>{report.age_when_missing} years</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Last Seen</label>
+                      <span>{report.last_seen_location}</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Date Missing</label>
+                      <span>
+                        {new Date(report.last_seen_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <label>Contact</label>
+                      <span>{report.phone_number}</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Reported By</label>
+                      <span>{report.users_table?.name || 'Unknown'} ({report.users_table?.email || 'No email'})</span>
+                    </div>
+                    {report.status === 'found' && (
+                      <div className="info-item">
+                        <label>Status</label>
+                        <span className="status-found">Person has been found and is safe</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="info-item">
+                      <label>Location</label>
+                      <span>{report.location}</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Date Spotted</label>
+                      <span>
+                        {new Date(report.date_time).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="card-footer">
+              <div className="footer-left">
+                <span className="last-updated">
+                  Last updated: {new Date(report.updated_at || report.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="footer-right">
+                <button className="footer-button">View Full Report</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="app-container">
+      {renderHeader()}
+      {renderStats()}
+      {renderTabs()}
+      
+      <main className="main-content">
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading reports...</p>
+          </div>
+        ) : error ? (
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3>Something went wrong</h3>
+            <p>{error}</p>
+            <button className="error-action" onClick={() => window.location.reload()}>
+              Try Again
+            </button>
+          </div>
+        ) : (
+          renderReportCards()
+        )}
+      </main>
     </div>
   );
 };

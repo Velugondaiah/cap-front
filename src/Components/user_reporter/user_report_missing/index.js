@@ -57,8 +57,12 @@ const UserReportMissing = () => {
       for (let pair of data.entries()) {
         console.log(pair[0]+ ':', pair[1]);
       }
+      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/api/report_missing', {
         method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
         body: data,
       });
       const result = await res.json();
