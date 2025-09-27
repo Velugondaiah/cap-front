@@ -11,6 +11,7 @@ import DoctorProfile from './Components/doctor/doctor_profile';
 import PoliceProfile from './Components/police/police_station_details';
 import UserReportMissing from './Components/user_reporter/user_report_missing';
 import UserHistory from './Components/user_reporter/user_history';
+import UserAsReporter from './Components/user_reporter/user_as_reporter'; // Add this import
 import Navbar from './Components/shared/Navbar';
 
 
@@ -145,6 +146,15 @@ function App() {
               <ProtectedRoute isAuthenticated={isAuthenticated} userRole={userRole}>
                 <LayoutWithNavbar userRole={userRole}>
                   <UserHistory />
+                </LayoutWithNavbar>
+              </ProtectedRoute>
+            } />
+            
+            {/* Add this new route for the upload sighting page */}
+            <Route path="/upload_sighting" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated} userRole={userRole}>
+                <LayoutWithNavbar userRole={userRole}>
+                  <UserAsReporter />
                 </LayoutWithNavbar>
               </ProtectedRoute>
             } />

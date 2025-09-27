@@ -486,3 +486,29 @@ body, .civic-dashboard-root {
 .civic-sidebar, .civic-sidebar-logo, .civic-sidebar-nav, .civic-sidebar-nav-item, .civic-sidebar-bottom, .civic-sidebar-profile, .civic-sidebar-badge {
   display: none !important;
 }
+/* Add these styles to your existing CSS */
+.camera {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  margin-bottom: 20px;
+}
+
+.camera video {
+  width: 100%;
+  height: auto;
+  background-color: #000;
+}
+
+.camera canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.camera button {
+  margin-top: 10px;
+}

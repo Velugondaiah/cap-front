@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Avatar, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert } from '@mui/material';
+import { Avatar, IconButton, Button, Snackbar, Alert } from '@mui/material';
 import { Dashboard, Person, Message, Settings, Notifications, Logout, Brightness4, Brightness7, VerifiedUser, AddAlert, CloudUpload, CheckCircle, EmojiEvents, Map } from '@mui/icons-material';
 import './index.css';
+import { useNavigate } from 'react-router-dom';
 
 const UserDashboard = () => {
   const [user, setUser] = useState({ name: '', role: 'Citizen', verified: true });
   const [darkMode, setDarkMode] = useState(false);
   const [activeNav, setActiveNav] = useState('Dashboard');
-  const [openSighting, setOpenSighting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('user'));
@@ -49,9 +50,10 @@ const UserDashboard = () => {
           </div>
           <div className="civic-header-actions">
             <button className="civic-header-action-btn" onClick={() => window.location.href = '/report_missing'}><AddAlert style={{ fontSize: 22 }} /> Report Missing</button>
-            <button className="civic-header-action-btn" onClick={() => setOpenSighting(true)}><CloudUpload style={{ fontSize: 22 }} /> Upload Sighting</button>
+            <button className="civic-header-action-btn" onClick={() => navigate('/upload_sighting')}><CloudUpload style={{ fontSize: 22 }} /> Upload Sighting</button>
           </div>
         </section>
+        
         {/* Widget Grid */}
         <section className="civic-widget-grid">
           {/* My Reports Widget */}
@@ -110,20 +112,7 @@ const UserDashboard = () => {
           </div>
         </section>
       </main>
-      {/* Upload Sighting Modal */}
-      <Dialog open={openSighting} onClose={() => setOpenSighting(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Upload Sighting</DialogTitle>
-        <DialogContent>
-          <TextField margin="dense" label="Photo URL" fullWidth />
-          <TextField margin="dense" label="Location" fullWidth />
-          <TextField margin="dense" label="Date & Time" type="datetime-local" InputLabelProps={{ shrink: true }} fullWidth />
-          <TextField margin="dense" label="Description / Notes" fullWidth multiline rows={2} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenSighting(false)}>Cancel</Button>
-          <Button onClick={() => { setOpenSighting(false); setOpenAlert(true); }} variant="contained" color="secondary">Submit</Button>
-        </DialogActions>
-      </Dialog>
+      
       {/* Snackbar for alert */}
       <Snackbar open={openAlert} autoHideDuration={4000} onClose={() => setOpenAlert(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setOpenAlert(false)} severity="success" sx={{ width: '100%' }}>
